@@ -8,7 +8,6 @@ const API_BASE_URLS = {
 };
 
 export const API_BASE_URL = API_BASE_URLS[ENV];
-export const MAX_DISTANCE_FROM_BAR = 100;
 
 // Apple testing
 export const APPLE_TESTING_EMAIL = 'apple@example.com';

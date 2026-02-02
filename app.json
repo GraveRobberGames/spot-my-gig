@@ -1,6 +1,6 @@
 {
   "expo": {
-    "name": "spot-my-gig",
+    "name": "SpotMyGig",
     "slug": "spot-my-gig",
     "version": "1.0.0",
     "orientation": "portrait",
@@ -9,7 +9,8 @@
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.norpet.spot-my-gig"
     },
     "android": {
       "adaptiveIcon": {
@@ -43,6 +44,13 @@
     "experiments": {
       "typedRoutes": true,
       "reactCompiler": true
-    }
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "5da9ad74-df68-4970-82a0-3468f3231917"
+      }
+    },
+    "owner": "grave-robber-games"
   }
 }

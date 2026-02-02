@@ -10,15 +10,22 @@ export default function PrimaryTextInput({
                                              ...props
                                          }) {
     return (
-        <View className="relative w-full">
-            <View className="border border-gray-22 rounded-lg px-4 py-3">
+        <View className="w-full">
+            <View
+                className={`rounded-xl px-4 py-3 border ${
+                    disabled
+                        ? "border-white/5"
+                        : "border-primary-5"
+                }`}
+            >
                 <TextInput
-                    className={`text-white text-base pb-1 w-full ${className}`}
+                    className={`text-text text-base w-full leading-5 ${className}`}
                     placeholder={placeholder}
-                    placeholderTextColor="#888DAA"
+                    placeholderTextColor="#A1A1AA"
                     value={value}
                     onChangeText={onChangeText}
                     editable={!disabled}
+                    selectionColor="#775EEB"
                     {...props}
                 />
             </View>

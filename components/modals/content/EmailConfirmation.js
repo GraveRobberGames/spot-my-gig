@@ -14,9 +14,9 @@ export default function EmailConfirmation({
 
     return (
         <View className="bg-gray-24 rounded-xl p-6 items-center shadow-lg pt-14">
-            <View className="absolute top-4 right-2">
+            <View className="absolute top-1 -right-2">
                 <Pressable className="absolute right-2" onPress={onClose}>
-                    <Svg width={20} height={20} viewBox="0 0 24 24" fill="none">
+                    <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                         <Path
                             fillRule="evenodd"
                             clipRule="evenodd"
@@ -27,13 +27,15 @@ export default function EmailConfirmation({
                 </Pressable>
             </View>
 
-            <Text className="text-white text-xl font-semibold mb-4 text-center">{t('You’re almost there!')}</Text>
-            <Text className="text-[#ABAFC4] text-base mb-8 text-center">
-                {t("We've sent an account verification link to {email}! If you can't find it, check your spam folder.", { email })}
+            <Text className="text-white text-xl font-semibold mb-4 text-center">
+                {t("Gandrīz gatavs!")}
             </Text>
-            <View className="space-y-2 flex-col w-full">
-                <PrimaryButton title={t('Open email app')} onPress={openEmailApp}/>
-                <SecondaryButton title={t('I didn’t get it')} onPress={onClose}/>
+            <Text className="text-[#ABAFC4] text-base mb-8 text-center">
+                {t("Mēs nosūtījām konta apstiprināšanas saiti uz {email}! Ja to neatrodi, pārbaudi arī savu mēstuļu mapi.", { email })}
+            </Text>
+            <View className="gap-y-2 flex flex-col w-full">
+                <PrimaryButton title={t('Atvērt e-pasta aplikāciju')} onPress={openEmailApp}/>
+                <SecondaryButton title={t('Es neko neesmu saņēmis')} onPress={onClose}/>
             </View>
         </View>
     );

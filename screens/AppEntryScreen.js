@@ -5,7 +5,7 @@ import {useUserContext} from "../contexts/UserContext";
 import {getProfileStepIndex} from "../helpers/getProfileStepIndex";
 import {API_BASE_URL} from "../constants/Global";
 
-export default function AppEntry({navigation}) {
+export default function AppEntryScreen({navigation}) {
     const {setUser} = useUserContext();
 
     useEffect(() => {
@@ -14,7 +14,7 @@ export default function AppEntry({navigation}) {
                 const userJson = await AsyncStorage.getItem("user");
 
                 if (!userJson) {
-                    navigation.reset({index: 0, routes: [{name: "Welcome"}]});
+                    navigation.reset({index: 0, routes: [{name: "WelcomeScreen"}]});
                     return;
                 }
 
@@ -31,7 +31,7 @@ export default function AppEntry({navigation}) {
 
                 if (!res.ok) {
                     await AsyncStorage.removeItem('user');
-                    navigation.reset({index: 0, routes: [{name: "Welcome"}]});
+                    navigation.reset({index: 0, routes: [{name: "WelcomeScreen"}]});
                     return;
                 }
 
@@ -57,7 +57,7 @@ export default function AppEntry({navigation}) {
                     });
                 }
             } catch (e) {
-                navigation.reset({index: 0, routes: [{name: "Welcome"}]});
+                navigation.reset({index: 0, routes: [{name: "WelcomeScreen"}]});
             }
         }
 

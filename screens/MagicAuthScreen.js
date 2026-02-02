@@ -10,7 +10,7 @@ import {registerPushToken} from "../hooks/expoPushToken";
 import {API_BASE_URL} from "../constants/Global";
 import {useTranslation} from "react-i18next";
 
-export default function MagicAuth({route, navigation}) {
+export default function MagicAuthScreen({route, navigation}) {
     const token = route.params?.token;
     const email = route.params?.email;
 
@@ -113,9 +113,18 @@ export default function MagicAuth({route, navigation}) {
     }, [token, email]);
 
     return (
-        <View className="flex-1 bg-black justify-center items-center">
-            <ActivityIndicator color="#fc42a4" size="large"/>
-            <Text className="text-primary-5 mt-5">{t('Authenticating...')}</Text>
+        <View className="flex-1 bg-bg justify-center items-center">
+            <View className="items-center rounded-2xl border border-white/10 bg-black/25 px-8 py-7">
+                <ActivityIndicator size="large" color="#775EEB" />
+
+                <Text className="text-text mt-4 text-base font-semibold">
+                    {t("Notiek autentifikācija…")}
+                </Text>
+
+                <Text className="text-white/60 mt-1 text-sm">
+                    {t("Lūdzu, uzgaidi mirkli")}
+                </Text>
+            </View>
         </View>
     );
 }

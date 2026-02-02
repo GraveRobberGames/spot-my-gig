@@ -4,7 +4,7 @@ import BaseModal from "./BaseModal";
 import LoaderContent from "./content/Loader";
 import EmailConfirmationContent from "./content/EmailConfirmation";
 import ConfirmationContent from "./content/Confirmation";
-import {MODAL_TYPES} from "../constants/ModalTypes";
+import {MODAL_TYPES} from "../../constants/ModalTypes";
 
 export default function GlobalModal() {
     const {modal, hideModal} = useModal();

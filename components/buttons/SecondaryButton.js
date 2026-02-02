@@ -12,7 +12,7 @@ export default function SecondaryButton({
         <TouchableOpacity
             disabled={disabled}
             onPress={onPress}
-            className={`px-6 py-4 rounded-lg border-2 bg-gray-22 border-gray-22 shadow-sm ${className}`}
+            className={`px-6 py-4 rounded-full bg-primary-1 shadow-sm ${className}`}
             {...props}
         >
             <Text className="font-bold text-center text-primary-5">
