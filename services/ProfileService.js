@@ -50,10 +50,34 @@ export async function saveProfileBase({ name, avatarUri }) {
     return { ok: true, payload: data.payload };
 }
 
+export async function saveArtistDetails({ bio, genres }) {
+    const headers = await getAuthHeaders();
+
+    const res = await fetch(`${API_BASE_URL}/profile/artist/details`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...headers,
+        },
+        body: JSON.stringify({
+            bio,
+            genres,
+        }),
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok || !data?.success) {
+        return { ok: false, data };
+    }
+
+    return { ok: true, payload: data.payload };
+}
+
 export async function saveArtistSocialMedia({ instagram, tiktok, facebook, website }) {
     const headers = await getAuthHeaders();
 
-    const res = await fetch(`${API_BASE_URL}/profile/artist-social-media`, {
+    const res = await fetch(`${API_BASE_URL}/profile/artist/social-media`, {
         method: "POST",
         headers: {
             "Content-Type": "application/json",
@@ -75,3 +99,25 @@ export async function saveArtistSocialMedia({ instagram, tiktok, facebook, websi
 
     return { ok: true, payload: data.payload };
 }
+
+export async function saveVenueDetails(payload) {
+    const headers = await getAuthHeaders();
+
+    const res = await fetch(`${API_BASE_URL}/profile/venue/details`, {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json",
+            ...headers,
+        },
+        body: JSON.stringify(payload),
+    });
+
+    const data = await safeJson(res);
+
+    if (!res.ok || !data?.success) {
+        return { ok: false, data };
+    }
+
+    return { ok: true, payload: data.payload };
+}
+

@@ -73,7 +73,7 @@ export default function AuthScreen({navigation, route}) {
                 headers: {"Content-Type": "application/json"},
                 body: JSON.stringify({email: emailTrimmed, locale}),
             });
-            console.log(res);
+
             setButtonDisabled(false);
 
             if (!res.ok) {

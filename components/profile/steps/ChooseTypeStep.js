@@ -95,7 +95,7 @@ export default function ChooseTypeStep({onTypeSaved}) {
     const {showModal, hideModal} = useModal();
     const insets = useSafeAreaInsets();
 
-    const [selectedType, setSelectedType] = useState(user?.type || USER_TYPES.ARTIST); // ✅ default musician/artist
+    const [selectedType, setSelectedType] = useState(user?.type || USER_TYPES.ARTIST);
     const [saving, setSaving] = useState(false);
 
     const cards = useMemo(() => {
@@ -135,8 +135,6 @@ export default function ChooseTypeStep({onTypeSaved}) {
             },
         ];
     }, [t]);
-
-    const footerHeight = 92 + insets.bottom;
 
     const saveType = async () => {
         if (saving) {
@@ -209,7 +207,7 @@ export default function ChooseTypeStep({onTypeSaved}) {
                 contentContainerStyle={{
                     paddingTop: 16,
                     paddingHorizontal: 24,
-                    paddingBottom: footerHeight + 18,
+                    paddingBottom: Math.max(18, insets.bottom + 18),
                 }}
             >
                 {cards.map((card) => (
@@ -223,13 +221,11 @@ export default function ChooseTypeStep({onTypeSaved}) {
                         onPress={() => setSelectedType(card.type)}
                     />
                 ))}
-            </ScrollView>
 
-            <View
-                className="absolute left-0 right-0"
-                style={{bottom: 0, paddingBottom: Math.max(12, insets.bottom)}}
-            >
-                <View className="px-6 pb-3">
+                <View className="mt-6">
+                    <View className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-primary-5/18 blur-2xl" />
+                    <View className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-accent-cyan/12 blur-2xl" />
+
                     <PrimaryButton
                         title={t("Turpināt")}
                         disabled={saving || !selectedType}
@@ -240,7 +236,9 @@ export default function ChooseTypeStep({onTypeSaved}) {
                         {t("Svarīgi: izvēlies rūpīgi — profila tipu vēlāk mainīt nevarēs.")}
                     </Text>
                 </View>
-            </View>
+
+                <View style={{ height: 10 }} />
+            </ScrollView>
         </View>
     );
 }

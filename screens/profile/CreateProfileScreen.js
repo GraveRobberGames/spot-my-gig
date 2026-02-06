@@ -16,7 +16,12 @@ import VenueLocationStep from "../../components/profile/steps/VenueLocationStep"
 import ArtistDetailsStep from "../../components/profile/steps/ArtistDetailsStep";
 import ArtistMediaStep from "../../components/profile/steps/ArtistMediaStep";
 
-import {saveProfileBase, saveArtistDetails, saveArtistSocialMedia} from "../../services/ProfileService";
+import {
+    saveProfileBase,
+    saveArtistDetails,
+    saveArtistSocialMedia,
+    saveVenueDetails
+} from "../../services/ProfileService";
 
 export default function CreateProfileScreen({ route, navigation }) {
     const { t } = useTranslation();
@@ -113,7 +118,15 @@ export default function CreateProfileScreen({ route, navigation }) {
                         <WatcherPreferencesStep onSaved={goNext} />
                     )}
 
-                    {stepKey === PROFILE_STEP_KEYS.VENUE_DETAILS && <VenueDetailsStep onSaved={goNext} />}
+                    {stepKey === PROFILE_STEP_KEYS.VENUE_DETAILS && (
+                        <VenueDetailsStep
+                            onSubmit={saveVenueDetails}
+                            onDone={async (payload) => {
+                                await applyUserPayload(payload);
+                                goNext();
+                            }}
+                        />
+                    )}
 
                     {stepKey === PROFILE_STEP_KEYS.VENUE_LOCATION && <VenueLocationStep onSaved={goNext} />}
 

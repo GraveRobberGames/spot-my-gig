@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { View, Text, ScrollView, Pressable, Image } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
@@ -6,6 +6,7 @@ import PrimaryButton from "../../buttons/PrimaryButton";
 import PrimaryTextInput from "../../inputs/PrimaryTextInput";
 import { useTranslation } from "react-i18next";
 import * as ImagePicker from "expo-image-picker";
+import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useUserContext } from "../../../contexts/UserContext";
 import { useAppContext } from "../../../contexts/AppContext";
 import { useModal } from "../../../contexts/ModalContext";
@@ -13,20 +14,26 @@ import { MODAL_TYPES } from "../../../constants/ModalTypes";
 
 export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) {
     const { t } = useTranslation();
-    const { user } = useUserContext();
+    const { user, updateUser } = useUserContext();
     const { showToast } = useAppContext();
     const { showModal, hideModal } = useModal();
     const insets = useSafeAreaInsets();
-
-    const [name, setName] = useState(user?.name || "");
-    const [avatarUri, setAvatarUri] = useState(user?.avatar_thumb_url || user?.avatar_full_url || null);
-    const [saving, setSaving] = useState(false);
 
     const isWatcher = user?.type === "watcher";
     const isArtist = user?.type === "artist";
     const isVenue = user?.type === "venue";
 
     const avatarRequired = !isWatcher;
+
+    const [name, setName] = useState(user?.name || "");
+    const [avatarUri, setAvatarUri] = useState(user?.avatar_thumb_url || user?.avatar_full_url || null);
+    const [saving, setSaving] = useState(false);
+
+    useEffect(() => {
+        setName(user?.name || "");
+        setAvatarUri(user?.avatar_thumb_url || user?.avatar_full_url || null);
+    }, [user?.name, user?.avatar_thumb_url, user?.avatar_full_url, user?.type]);
+
     const canContinue = !!name.trim() && (!avatarRequired || !!avatarUri);
 
     const copy = useMemo(() => {
@@ -63,7 +70,7 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
             namePlaceholder: t("Piemēram: Normunds"),
             vibe: "watcher",
         };
-    }, [user?.type, t]);
+    }, [isArtist, isVenue, t]);
 
     const bubbleTint =
         copy.vibe === "artist"
@@ -121,6 +128,11 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                 return;
             }
 
+            if (result?.payload) {
+                updateUser({ ...result.payload });
+                await AsyncStorage.setItem("user", JSON.stringify({ ...result.payload }));
+            }
+
             if (onDone) {
                 onDone(result.payload);
             }
@@ -138,8 +150,6 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                 <View className="absolute top-28 -left-32 h-80 w-80 rounded-full bg-accent-cyan/14 blur-2xl" />
                 <View className="absolute -bottom-28 -left-24 h-72 w-72 rounded-full bg-primary-5/16 blur-2xl" />
                 <View className="absolute -bottom-16 -right-20 h-64 w-64 rounded-full bg-white/5 blur-2xl" />
-                <View className="absolute inset-0 bg-bg" />
-                <View className="absolute inset-0 bg-black/65" />
             </View>
 
             <ScrollView
@@ -232,11 +242,15 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                     </View>
                 </View>
 
-                <View className="mt-10 bg-black/35 overflow-hidden">
+                <View className="mt-10">
                     <View className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-primary-5/18 blur-2xl" />
                     <View className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-accent-cyan/12 blur-2xl" />
 
-                    <PrimaryButton title={submitLabel || t("Turpināt")} disabled={!canContinue || saving} onPress={save} />
+                    <PrimaryButton
+                        title={submitLabel || t("Turpināt")}
+                        disabled={!canContinue || saving}
+                        onPress={save}
+                    />
 
                     {!!footerNote && (
                         <Text className="text-white/55 text-xs text-center mt-3 leading-4">
