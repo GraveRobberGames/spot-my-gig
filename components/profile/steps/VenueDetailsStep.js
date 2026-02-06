@@ -1,41 +1,107 @@
-import React, {useMemo, useRef, useState} from "react";
-import {View, Text, Pressable, Keyboard, ScrollView} from "react-native";
-import {useSafeAreaInsets} from "react-native-safe-area-context";
-import {MaterialCommunityIcons} from "@expo/vector-icons";
-import {useTranslation} from "react-i18next";
-import {GooglePlacesAutocomplete} from "react-native-google-places-autocomplete";
+import React, { useEffect, useMemo, useRef, useState } from "react";
+import { View, Text, Pressable, Keyboard, ScrollView } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { MaterialCommunityIcons } from "@expo/vector-icons";
+import { useTranslation } from "react-i18next";
+import { GooglePlacesAutocomplete } from "react-native-google-places-autocomplete";
+
 import PrimaryButton from "../../buttons/PrimaryButton";
 import PrimaryTextInput from "../../inputs/PrimaryTextInput";
-import {useAppContext} from "../../../contexts/AppContext";
-import {useModal} from "../../../contexts/ModalContext";
-import {MODAL_TYPES} from "../../../constants/ModalTypes";
+import { useAppContext } from "../../../contexts/AppContext";
+import { useModal } from "../../../contexts/ModalContext";
+import { MODAL_TYPES } from "../../../constants/ModalTypes";
 
-const GOOGLE_PLACES_API_KEY = process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "AIzaSyD_b_AEtX0lZj0ocQi1f8jpaZee8S1YYKY";
+const GOOGLE_PLACES_API_KEY =
+    process.env.EXPO_PUBLIC_GOOGLE_PLACES_API_KEY || "AIzaSyD_b_AEtX0lZj0ocQi1f8jpaZee8S1YYKY";
 
-export default function VenueDetailsStep({onSubmit, onDone, submitLabel}) {
-    const {t} = useTranslation();
+function normalizeInitial(initial) {
+    if (!initial || typeof initial !== "object") {
+        return { place: null, description: "" };
+    }
+
+    const place = initial.place && typeof initial.place === "object" ? initial.place : null;
+    const description = typeof initial.description === "string" ? initial.description : "";
+
+    const hasCoords = place && typeof place.lat === "number" && typeof place.lng === "number";
+
+    if (!place || !place.place_id || !hasCoords) {
+        return { place: null, description };
+    }
+
+    return { place, description };
+}
+
+export default function VenueDetailsStep({ onSubmit, onDone, onDraftChange, initial }) {
+    const { t } = useTranslation();
     const insets = useSafeAreaInsets();
-    const {showToast} = useAppContext();
-    const {showModal, hideModal} = useModal();
+    const { showToast } = useAppContext();
+    const { showModal, hideModal } = useModal();
 
     const placesRef = useRef(null);
+    const hydratedFromInitialRef = useRef(false);
+    const touchedRef = useRef(false);
 
     const [saving, setSaving] = useState(false);
 
     const [place, setPlace] = useState(null);
     const [description, setDescription] = useState("");
 
+    const normalized = useMemo(() => {
+        return normalizeInitial(initial);
+    }, [initial]);
+
+    useEffect(() => {
+        if (hydratedFromInitialRef.current) {
+            return;
+        }
+
+        if (touchedRef.current) {
+            return;
+        }
+
+        if (!normalized.place?.place_id) {
+            return;
+        }
+
+        hydratedFromInitialRef.current = true;
+
+        setPlace(normalized.place);
+        setDescription(normalized.description || "");
+
+        const text = normalized.place?.address || normalized.place?.name || "";
+
+        if (placesRef.current?.setAddressText) {
+            placesRef.current.setAddressText(text);
+        }
+    }, [normalized]);
+
+    useEffect(() => {
+        if (!onDraftChange) {
+            return;
+        }
+
+        onDraftChange({ place, description });
+    }, [place, description, onDraftChange]);
+
     const canContinue = useMemo(() => {
+        if (saving) {
+            return false;
+        }
+
         if (!place?.place_id) {
             return false;
         }
 
-        if (!place?.lat || !place?.lng) {
+        if (typeof place?.lat !== "number" || typeof place?.lng !== "number") {
+            return false;
+        }
+
+        if (!(description || "").trim().length) {
             return false;
         }
 
         return true;
-    }, [place]);
+    }, [place, saving, description]);
 
     const onPickPlace = (data, details) => {
         if (!details) {
@@ -53,17 +119,29 @@ export default function VenueDetailsStep({onSubmit, onDone, submitLabel}) {
         const formattedAddress = details?.formatted_address || data?.description || "";
         const name = details?.name || data?.structured_formatting?.main_text || "";
 
+        touchedRef.current = true;
+
         setPlace({
             place_id: data?.place_id || details?.place_id,
             name,
             address: formattedAddress,
             lat,
             lng,
-            city: details?.address_components?.find(c => (c?.types || []).includes("locality"))?.long_name || null,
-            country: details?.address_components?.find(c => (c?.types || []).includes("country"))?.long_name || null,
+            city: details?.address_components?.find((c) => (c?.types || []).includes("locality"))?.long_name || null,
+            country: details?.address_components?.find((c) => (c?.types || []).includes("country"))?.long_name || null,
         });
 
         Keyboard.dismiss();
+    };
+
+    const clearPlace = () => {
+        touchedRef.current = true;
+
+        setPlace(null);
+
+        if (placesRef.current?.setAddressText) {
+            placesRef.current.setAddressText("");
+        }
     };
 
     const save = async () => {
@@ -81,6 +159,11 @@ export default function VenueDetailsStep({onSubmit, onDone, submitLabel}) {
             return;
         }
 
+        if (!(description || "").trim().length) {
+            showToast(t("Biogrāfija ir obligāta"), "error");
+            return;
+        }
+
         setSaving(true);
         showModal(MODAL_TYPES.LOADING);
 
@@ -93,7 +176,7 @@ export default function VenueDetailsStep({onSubmit, onDone, submitLabel}) {
                 lng: place.lng,
                 city: place.city,
                 country: place.country,
-                description: description.trim() || null,
+                description: (description || "").trim() || null,
             };
 
             const result = await onSubmit?.(payload);
@@ -137,187 +220,178 @@ export default function VenueDetailsStep({onSubmit, onDone, submitLabel}) {
                         paddingBottom: Math.max(18, insets.bottom + 18),
                     }}
                 >
-                <View className="mt-2">
-                    <View className="flex-row items-center">
-                        <View className="h-2 w-2 rounded-full bg-primary-5 mr-2" />
-                        <Text className="text-white/60 text-xs font-semibold tracking-wide uppercase">
-                            {t("Koncertvieta")}
+                    <View className="mt-2">
+                        <View className="flex-row items-center">
+                            <View className="h-2 w-2 rounded-full bg-primary-5 mr-2" />
+                            <Text className="text-white/60 text-xs font-semibold tracking-wide uppercase">
+                                {t("Koncertvieta")}
+                            </Text>
+                        </View>
+
+                        <Text className="text-text text-4xl font-extrabold tracking-tight mt-3 leading-[40px]">
+                            {t("Atzīmē savu vietu kartē")}
+                        </Text>
+
+                        <Text className="text-white/75 text-base mt-4 leading-6">
+                            {t("Ieraksti nosaukumu vai adresi un izvēlies precīzu vietu no saraksta.")}
                         </Text>
                     </View>
 
-                    <Text className="text-text text-4xl font-extrabold tracking-tight mt-3 leading-[40px]">
-                        {t("Atzīmē savu vietu kartē")}
-                    </Text>
+                    <View className="mt-8">
+                        <Text className="text-text font-extrabold text-base mb-3">
+                            {t("Atrašanās vieta")}
+                        </Text>
 
-                    <Text className="text-white/75 text-base mt-4 leading-6">
-                        {t("Ieraksti nosaukumu vai adresi un izvēlies precīzu vietu no saraksta.")}
-                    </Text>
-                </View>
+                        <View className="rounded-2xl">
+                            <GooglePlacesAutocomplete
+                                ref={placesRef}
+                                disableScroll={true}
+                                placeholder={t("Sāc rakstīt: Zeit, Rīga...")}
+                                fetchDetails={true}
+                                enablePoweredByContainer={false}
+                                onPress={onPickPlace}
+                                query={{
+                                    key: GOOGLE_PLACES_API_KEY,
+                                    language: "lv",
+                                }}
+                                styles={{
+                                    container: { flex: 0, width: "100%" },
+                                    textInputContainer: {
+                                        flexDirection: "row",
+                                        alignItems: "center",
+                                        backgroundColor: "rgba(255,255,255,0.06)",
+                                        borderRadius: 14,
+                                        paddingHorizontal: 10,
+                                        height: 52,
+                                        width: "100%",
+                                    },
+                                    textInput: {
+                                        flex: 1,
+                                        height: "100%",
+                                        color: "white",
+                                        fontSize: 16,
+                                        paddingHorizontal: 8,
+                                        paddingTop: 10,
+                                        backgroundColor: "transparent",
+                                        minWidth: 0,
+                                    },
+                                    listView: {
+                                        backgroundColor: "rgba(10,10,12,0.98)",
+                                        marginTop: 8,
+                                        borderRadius: 16,
+                                        padding: 8,
+                                        width: "100%",
+                                        overflow: "hidden",
+                                    },
+                                    row: {
+                                        paddingVertical: 14,
+                                        paddingHorizontal: 12,
+                                        borderRadius: 14,
+                                        backgroundColor: "rgba(255,255,255,0.04)",
+                                        marginBottom: 6,
+                                    },
+                                    separator: { height: 0 },
+                                }}
+                                renderRow={(rowData) => {
+                                    const main = rowData?.structured_formatting?.main_text || rowData?.description || "";
+                                    const secondary = rowData?.structured_formatting?.secondary_text || "";
 
-                <View className="mt-8">
-                    <Text className="text-text font-extrabold text-base mb-3">
-                        {t("Atrašanās vieta")}
-                    </Text>
+                                    return (
+                                        <View style={{ width: "100%" }}>
+                                            <Text
+                                                numberOfLines={1}
+                                                ellipsizeMode="tail"
+                                                style={{ color: "white", fontSize: 15, fontWeight: "700", minWidth: 0 }}
+                                            >
+                                                {main}
+                                            </Text>
 
-                    <View className="rounded-2xl overflow-hidden">
-                        <GooglePlacesAutocomplete
-                            ref={placesRef}
-                            placeholder={t("Sāc rakstīt: Zeit, Rīga...")}
-                            fetchDetails={true}
-                            enablePoweredByContainer={false}
-                            onPress={onPickPlace}
-                            query={{
-                                key: GOOGLE_PLACES_API_KEY,
-                                language: "lv",
-                            }}
-                            styles={{
-                                container: {
-                                    flex: 0,
-                                },
-
-                                textInputContainer: {
-                                    flexDirection: "row",
-                                    alignItems: "center",
-                                    backgroundColor: "rgba(255,255,255,0.06)",
-                                    borderRadius: 14,
-                                    paddingHorizontal: 10,
-                                    height: 52,
-                                },
-
-                                textInput: {
-                                    flex: 1,
-                                    height: "100%",
-                                    color: "white",
-                                    fontSize: 16,
-                                    paddingHorizontal: 8,
-                                    paddingTop: 10,
-                                    backgroundColor: "transparent",
-                                },
-
-                                listView: {
-                                    backgroundColor: "rgba(10,10,12,0.98)",
-                                    marginTop: 8,
-                                    borderRadius: 16,
-                                    padding: 8,
-                                },
-
-                                row: {
-                                    paddingVertical: 14,
-                                    paddingHorizontal: 12,
-                                    borderRadius: 14,
-                                    backgroundColor: "rgba(255,255,255,0.04)",
-                                    marginBottom: 6,
-                                },
-
-                                separator: {
-                                    height: 0,
-                                },
-
-                                description: {
-                                    color: "white",
-                                    fontSize: 15,
-                                    fontWeight: "600",
-                                },
-                            }}
-                            renderLeftButton={() => (
-                                <View className="h-full items-center justify-center pr-2">
-                                    <View className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 items-center justify-center">
-                                        <MaterialCommunityIcons
-                                            name="map-marker-outline"
-                                            size={20}
-                                            color="white"
-                                        />
+                                            {!!secondary && (
+                                                <Text
+                                                    numberOfLines={1}
+                                                    ellipsizeMode="tail"
+                                                    style={{ color: "rgba(255,255,255,0.65)", fontSize: 13, marginTop: 2, minWidth: 0 }}
+                                                >
+                                                    {secondary}
+                                                </Text>
+                                            )}
+                                        </View>
+                                    );
+                                }}
+                                renderLeftButton={() => (
+                                    <View className="h-full items-center justify-center pr-2">
+                                        <View className="h-10 w-10 rounded-xl border border-white/10 bg-white/5 items-center justify-center">
+                                            <MaterialCommunityIcons name="map-marker-outline" size={20} color="white" />
+                                        </View>
                                     </View>
-                                </View>
-                            )}
-                        />
-                    </View>
+                                )}
+                            />
+                        </View>
 
-                    {!!place?.place_id && (
-                        <View className="mt-5 rounded-2xl border border-primary-5/25 bg-primary-5/10 px-5 py-4 overflow-hidden">
-                            <View className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-primary-5/20 blur-2xl" />
-                            <View className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-accent-cyan/12 blur-2xl" />
-
-                            <View className="flex-row items-start">
-                                <View className="mr-4 mt-1">
-                                    <View className="h-11 w-11 rounded-2xl border border-primary-5/30 bg-black/30 items-center justify-center">
-                                        <MaterialCommunityIcons name="check-circle-outline" size={20} color="white" />
+                        {!!place?.place_id && (
+                            <View className="mt-5 rounded-2xl border border-primary-5/25 bg-primary-5/10 px-5 py-4 overflow-hidden">
+                                <View className="flex-row items-start">
+                                    <View className="mr-4 mt-1">
+                                        <View className="h-11 w-11 rounded-2xl border border-primary-5/30 bg-black/30 items-center justify-center">
+                                            <MaterialCommunityIcons name="check-circle-outline" size={20} color="white" />
+                                        </View>
                                     </View>
-                                </View>
 
-                                <View className="flex-1">
-                                    <Text className="text-text font-extrabold text-base">
-                                        {place.name || t("Izvēlētā vieta")}
-                                    </Text>
-                                    <Text className="text-white/70 text-sm mt-1 leading-5">
-                                        {place.address}
-                                    </Text>
-
-                                    <Pressable
-                                        onPress={() => {
-                                            setPlace(null);
-
-                                            if (placesRef.current?.setAddressText) {
-                                                placesRef.current.setAddressText("");
-                                            }
-                                        }}
-                                        className="mt-3 self-start"
-                                    >
-                                        <Text className="text-primary-5 font-semibold text-sm">
-                                            {t("Mainīt")}
+                                    <View className="flex-1">
+                                        <Text className="text-text font-extrabold text-base">
+                                            {place.name || t("Izvēlētā vieta")}
                                         </Text>
-                                    </Pressable>
+
+                                        <Text className="text-white/70 text-sm mt-1 leading-5">
+                                            {place.address}
+                                        </Text>
+
+                                        <Pressable onPress={clearPlace} className="mt-3 self-start">
+                                            <Text className="text-primary-5 font-semibold text-sm">
+                                                {t("Mainīt")}
+                                            </Text>
+                                        </Pressable>
+                                    </View>
                                 </View>
                             </View>
-                        </View>
-                    )}
-                </View>
+                        )}
+                    </View>
 
-                <View className="mt-10">
-                    <Text className="text-text font-extrabold text-base mb-3">
-                        {t("Apraksts")}
-                    </Text>
-
-                    <View className="relative">
-                        <View className="absolute -top-6 -left-10 h-24 w-24 rounded-full bg-primary-5/20 blur-2xl" />
-                        <View className="absolute -bottom-6 -right-10 h-24 w-24 rounded-full bg-accent-cyan/12 blur-2xl" />
+                    <View className="mt-10">
+                        <Text className="text-text font-extrabold text-base mb-3">
+                            {t("Apraksts")}
+                        </Text>
 
                         <PrimaryTextInput
                             placeholder={t("Piemēram: intīma skatuve, laba skaņa, bieži indie/rock vakari…")}
                             value={description}
-                            onChangeText={setDescription}
+                            onChangeText={(v) => {
+                                touchedRef.current = true;
+                                setDescription(v);
+                            }}
                             multiline={true}
                             style={{
                                 fontSize: 16,
                                 lineHeight: 20,
-                                paddingVertical: 14,
+                                paddingVertical: 4,
                                 minHeight: 120,
                                 textAlignVertical: "top",
                             }}
                         />
                     </View>
 
-                    <Text className="text-white/55 text-xs mt-3 leading-4">
-                        {t("Šis teksts palīdzēs māksliniekiem saprast noskaņu un formātu.")}
-                    </Text>
-                </View>
-
-                <View className="mt-10">
-                    <View className="absolute -top-10 -right-10 h-36 w-36 rounded-full bg-primary-5/18 blur-2xl" />
-                    <View className="absolute -bottom-10 -left-10 h-36 w-36 rounded-full bg-accent-cyan/12 blur-2xl" />
-
-                    <PrimaryButton
-                        title={t("Turpināt")}
-                        disabled={!canContinue || saving}
-                        onPress={save}
-                    />
-
-                    <Text className="text-white/55 text-xs text-center mt-3 leading-4">
-                        {t("Svarīgi: izvēlies rūpīgi — profila tipu vēlāk mainīt nevarēs.")}
-                    </Text>
-                </View>
-            </ScrollView>
-        </View>
+                    <View className="mt-10">
+                        <PrimaryButton
+                            title={t("Turpināt")}
+                            disabled={!canContinue}
+                            onPress={() => {
+                                Keyboard.dismiss();
+                                save();
+                            }}
+                        />
+                    </View>
+                </ScrollView>
+            </View>
         </View>
     );
 }

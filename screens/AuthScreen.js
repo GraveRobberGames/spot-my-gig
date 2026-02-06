@@ -158,7 +158,7 @@ export default function AuthScreen({navigation, route}) {
 
                         <View className="mt-3">
                             <PrimaryTextInput
-                                style={{lineHeight: 15, paddingVertical: 5}}
+                                style={{lineHeight: 16, paddingVertical: 5}}
                                 placeholder={t("hello@gmail.com")}
                                 value="normunds.petrovs23@gmail.com"
                                 onChangeText={(v) => {

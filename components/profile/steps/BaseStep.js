@@ -11,6 +11,35 @@ import { useUserContext } from "../../../contexts/UserContext";
 import { useAppContext } from "../../../contexts/AppContext";
 import { useModal } from "../../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../../constants/ModalTypes";
+import { COUNTRIES, getCountryByCode, getFlagEmoji } from "../../../constants/Countries";
+
+function CountryRow({ code, name, selected, onPress }) {
+    return (
+        <Pressable
+            onPress={onPress}
+            className="px-4 py-3 border-b border-white/5 flex-row items-center"
+        >
+            <Text className="text-white text-base mr-3">
+                {getFlagEmoji(code)}
+            </Text>
+
+            <View className="flex-1">
+                <Text className="text-white font-semibold">
+                    {name}
+                </Text>
+                <Text className="text-white/55 text-xs mt-1">
+                    {code}
+                </Text>
+            </View>
+
+            {selected && (
+                <View className="h-8 w-8 rounded-2xl border border-success/30 bg-success/10 items-center justify-center">
+                    <MaterialCommunityIcons name="check" size={18} color="white" />
+                </View>
+            )}
+        </Pressable>
+    );
+}
 
 export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) {
     const { t } = useTranslation();
@@ -29,12 +58,19 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
     const [avatarUri, setAvatarUri] = useState(user?.avatar_thumb_url || user?.avatar_full_url || null);
     const [saving, setSaving] = useState(false);
 
+    const defaultCountryCode = user?.country_code ? String(user.country_code).toUpperCase() : "LV";
+    const [countryCode, setCountryCode] = useState(defaultCountryCode);
+    const [countryOpen, setCountryOpen] = useState(false);
+
     useEffect(() => {
         setName(user?.name || "");
         setAvatarUri(user?.avatar_thumb_url || user?.avatar_full_url || null);
-    }, [user?.name, user?.avatar_thumb_url, user?.avatar_full_url, user?.type]);
 
-    const canContinue = !!name.trim() && (!avatarRequired || !!avatarUri);
+        const nextCode = user?.country_code ? String(user.country_code).toUpperCase() : "LV";
+        setCountryCode(nextCode);
+    }, [user?.name, user?.avatar_thumb_url, user?.avatar_full_url, user?.type, user?.country_code]);
+
+    const canContinue = !!name.trim() && !!countryCode && (!avatarRequired || !!avatarUri);
 
     const copy = useMemo(() => {
         if (isArtist) {
@@ -45,6 +81,8 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                 avatarLabel: t("Profila foto"),
                 nameLabel: t("Skatuves vārds"),
                 namePlaceholder: t("Piemēram: Astro’n’out"),
+                countryLabel: t("Valsts"),
+                countrySubtitle: t("No kurienes Tu esi?"),
                 vibe: "artist",
             };
         }
@@ -57,6 +95,8 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                 avatarLabel: t("Logo vai foto"),
                 nameLabel: t("Koncertvietas nosaukums"),
                 namePlaceholder: t("Piemēram: Zeit, radošais kvartāls"),
+                countryLabel: t("Valsts"),
+                countrySubtitle: t("Kur atrodas koncertvieta?"),
                 vibe: "venue",
             };
         }
@@ -68,6 +108,8 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
             avatarLabel: t("Profila foto (nav obligāti)"),
             nameLabel: t("Tavs vārds"),
             namePlaceholder: t("Piemēram: Normunds"),
+            countryLabel: t("Valsts"),
+            countrySubtitle: t("Lai ieteiktu saturu tuvāk Tev"),
             vibe: "watcher",
         };
     }, [isArtist, isVenue, t]);
@@ -78,6 +120,15 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
             : copy.vibe === "venue"
                 ? "bg-accent-cyan/18"
                 : "bg-primary-5/18";
+
+    const selectedCountry = useMemo(() => {
+        const found = getCountryByCode(countryCode);
+        if (found) {
+            return found;
+        }
+
+        return { code: "LV", name: "Latvija" };
+    }, [countryCode]);
 
     const pickAvatar = async () => {
         const permission = await ImagePicker.requestMediaLibraryPermissionsAsync();
@@ -118,7 +169,11 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
         showModal(MODAL_TYPES.LOADING);
 
         try {
-            const result = await onSubmit({ name: name.trim(), avatarUri });
+            const result = await onSubmit({
+                name: name.trim(),
+                avatarUri,
+                country_code: countryCode,
+            });
 
             hideModal();
             setSaving(false);
@@ -173,7 +228,7 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                         {copy.title}
                     </Text>
 
-                    <Text className="text-white/75 text-base mt-4 leading-6">
+                    <Text className="text-white/75 text-base mt-1 leading-6">
                         {copy.subtitle}
                     </Text>
                 </View>
@@ -224,7 +279,7 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                     </Pressable>
                 </View>
 
-                <View className="mt-10">
+                <View className="mt-8">
                     <Text className="text-text font-extrabold text-base mb-3">
                         {copy.nameLabel}
                     </Text>
@@ -240,6 +295,69 @@ export default function BaseStep({ submitLabel, onSubmit, onDone, footerNote }) 
                             style={{ fontSize: 18, lineHeight: 20, paddingVertical: 12 }}
                         />
                     </View>
+                </View>
+
+                <View className="mt-6">
+                    <Text className="text-text font-extrabold text-base mb-3">
+                        {copy.countryLabel}
+                    </Text>
+
+                    <Pressable
+                        onPress={() => {
+                            if (saving) {
+                                return;
+                            }
+
+                            setCountryOpen((v) => !v);
+                        }}
+                        className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden"
+                    >
+                        <View className="px-4 py-4 flex-row items-center">
+                            <Text className="text-white text-lg mr-3">
+                                {getFlagEmoji(selectedCountry.code)}
+                            </Text>
+
+                            <View className="flex-1">
+                                <Text className="text-white font-semibold text-base">
+                                    {selectedCountry.name}
+                                </Text>
+                                <Text className="text-white/55 text-xs">
+                                    {copy.countrySubtitle}
+                                </Text>
+                            </View>
+
+                            <MaterialCommunityIcons
+                                name={countryOpen ? "chevron-up" : "chevron-down"}
+                                size={22}
+                                color="white"
+                            />
+                        </View>
+
+                        {countryOpen && (
+                            <View className="border-t border-white/10 bg-black/25">
+                                {COUNTRIES.map((c) => {
+                                    const selected = c.code === selectedCountry.code;
+
+                                    return (
+                                        <CountryRow
+                                            key={c.code}
+                                            code={c.code}
+                                            name={c.name}
+                                            selected={selected}
+                                            onPress={() => {
+                                                if (saving) {
+                                                    return;
+                                                }
+
+                                                setCountryCode(c.code);
+                                                setCountryOpen(false);
+                                            }}
+                                        />
+                                    );
+                                })}
+                            </View>
+                        )}
+                    </Pressable>
                 </View>
 
                 <View className="mt-10">

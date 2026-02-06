@@ -5,10 +5,11 @@ export const PROFILE_STEP_KEYS = {
     WATCHER_PREFERENCES: "watcher_preferences",
 
     VENUE_DETAILS: "venue_details",
-    VENUE_LOCATION: "venue_location",
+    VENUE_SOCIAL_MEDIA: "venue_social_media",
 
     ARTIST_DETAILS: "artist_details",
-    ARTIST_MEDIA: "artist_media",
+    ARTIST_MUSIC: "artist_music",
+    ARTIST_SOCIAL_MEDIA: "artist_social_media",
 };
 
 export const PROFILE_STEPS_BY_TYPE = {
@@ -21,13 +22,14 @@ export const PROFILE_STEPS_BY_TYPE = {
         PROFILE_STEP_KEYS.CHOOSE_TYPE,
         PROFILE_STEP_KEYS.BASE,
         PROFILE_STEP_KEYS.VENUE_DETAILS,
-        PROFILE_STEP_KEYS.VENUE_LOCATION,
+        PROFILE_STEP_KEYS.VENUE_SOCIAL_MEDIA,
     ],
     artist: [
         PROFILE_STEP_KEYS.CHOOSE_TYPE,
         PROFILE_STEP_KEYS.BASE,
         PROFILE_STEP_KEYS.ARTIST_DETAILS,
-        PROFILE_STEP_KEYS.ARTIST_MEDIA,
+        PROFILE_STEP_KEYS.ARTIST_MUSIC,
+        PROFILE_STEP_KEYS.ARTIST_SOCIAL_MEDIA,
     ],
 };
 

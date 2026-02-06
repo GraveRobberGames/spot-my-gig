@@ -1,4 +1,4 @@
-import React, {useEffect, useMemo, useState} from "react";
+import React, {useEffect, useMemo, useRef, useState} from "react";
 import { View, Text, ScrollView, Pressable, Keyboard } from "react-native";
 import { MaterialCommunityIcons } from "@expo/vector-icons";
 import { useTranslation } from "react-i18next";
@@ -36,38 +36,46 @@ export default function ArtistDetailsStep({ submitLabel, onSubmit, onDone }) {
     const BIO_MAX = 1200;
 
     const [bio, setBio] = useState(user?.biography || "");
-    const [selectedGenres, setSelectedGenres] = useState(user?.artist?.genres || []);
+    const [selectedGenres, setSelectedGenres] = useState(user?.genres || []);
 
     const genres = useMemo(() => {
         return [
-            t("Pop"),
-            t("Rock"),
-            t("Indie"),
-            t("Hip-hop"),
-            t("Electronic"),
-            t("Jazz"),
-            t("Folk"),
-            t("Metal"),
-            t("Punk"),
-            t("R&B"),
-            t("Soul"),
-            t("Reggae"),
-            t("Classical"),
-            t("Blues"),
-            t("Country"),
-            t("Alternative"),
+            { key: "pop", label: t("genres.pop", "Pop") },
+            { key: "rock", label: t("genres.rock", "Rock") },
+            { key: "indie", label: t("genres.indie", "Indie") },
+            { key: "hip_hop", label: t("genres.hip_hop", "Hip-hop") },
+            { key: "electronic", label: t("genres.electronic", "Electronic") },
+            { key: "jazz", label: t("genres.jazz", "Jazz") },
+            { key: "folk", label: t("genres.folk", "Folk") },
+            { key: "metal", label: t("genres.metal", "Metal") },
+            { key: "punk", label: t("genres.punk", "Punk") },
+            { key: "rnb", label: t("genres.rnb", "R&B") },
+            { key: "soul", label: t("genres.soul", "Soul") },
+            { key: "reggae", label: t("genres.reggae", "Reggae") },
+            { key: "classical", label: t("genres.classical", "Classical") },
+            { key: "blues", label: t("genres.blues", "Blues") },
+            { key: "country", label: t("genres.country", "Country") },
+            { key: "alternative", label: t("genres.alternative", "Alternative") },
         ];
     }, [t]);
 
-    useEffect(() => {
-        setBio(user?.biography || "");
-        setSelectedGenres(user?.artist?.genres || []);
-    }, [user?.biography, user?.artist?.genres]);
+    const touchedRef = useRef(false);
 
-    const toggleGenre = (genre) => {
+    useEffect(() => {
+        if (touchedRef.current) {
+            return;
+        }
+
+        setBio(user?.biography || "");
+        setSelectedGenres(user?.genres || []);
+    }, [user?.biography, user?.genres]);
+
+    const toggleGenre = (genreKey) => {
+        touchedRef.current = true;
+
         setSelectedGenres((prev) => {
-            if (prev.includes(genre)) {
-                return prev.filter((g) => g !== genre);
+            if (prev.includes(genreKey)) {
+                return prev.filter((g) => g !== genreKey);
             }
 
             if (prev.length >= 3) {
@@ -75,7 +83,7 @@ export default function ArtistDetailsStep({ submitLabel, onSubmit, onDone }) {
                 return prev;
             }
 
-            return [...prev, genre];
+            return [...prev, genreKey];
         });
     };
 
@@ -187,16 +195,16 @@ export default function ArtistDetailsStep({ submitLabel, onSubmit, onDone }) {
 
                     <View className="mt-4 flex-row flex-wrap">
                         {genres.map((g) => {
-                            const active = selectedGenres.includes(g);
+                            const active = selectedGenres.includes(g.key);
                             const disabled = !active && selectedGenres.length >= 3;
 
                             return (
                                 <GenreChip
-                                    key={g}
-                                    label={g}
+                                    key={g.key}
+                                    label={g.label}
                                     active={active}
                                     disabled={disabled}
-                                    onPress={() => toggleGenre(g)}
+                                    onPress={() => toggleGenre(g.key)}
                                 />
                             );
                         })}
@@ -221,7 +229,7 @@ export default function ArtistDetailsStep({ submitLabel, onSubmit, onDone }) {
                     )}
                 </View>
 
-                <View className="mt-8 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 overflow-hidden">
+                <View className="mt-6 rounded-2xl border border-white/10 bg-black/20 px-4 py-4 overflow-hidden">
                     <View className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-primary-5/14 blur-2xl" />
                     <View className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-accent-cyan/10 blur-2xl" />
 
@@ -240,14 +248,17 @@ export default function ArtistDetailsStep({ submitLabel, onSubmit, onDone }) {
                             placeholder={t("Pastāsti par sevi, skanējumu, sastāvu, pieredzi, un ko vēlies spēlēt.")}
                             value={bio}
                             onChangeText={(v) => {
+                                touchedRef.current = true;
+
                                 if (v.length > BIO_MAX) {
                                     setBio(v.slice(0, BIO_MAX));
                                     return;
                                 }
+
                                 setBio(v);
                             }}
                             multiline
-                            style={{ minHeight: 160, fontSize: 16, lineHeight: 22, paddingVertical: 10 }}
+                            style={{ minHeight: 160, fontSize: 16, lineHeight: 22, paddingVertical: 2 }}
                         />
                     </View>
 
