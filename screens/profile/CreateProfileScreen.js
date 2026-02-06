@@ -122,7 +122,7 @@ export default function CreateProfileScreen({ route, navigation }) {
         const next = stepIndex + 1;
 
         if (next >= steps.length) {
-            navigation.reset({ index: 0, routes: [{ name: "DashboardScreen" }] });
+            navigation.reset({ index: 0, routes: [{ name: "AppTabs" }] });
             return;
         }
 

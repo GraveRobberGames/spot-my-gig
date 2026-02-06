@@ -15,8 +15,12 @@ import AppEntryScreen from './screens/AppEntryScreen';
 import AuthScreen from './screens/AuthScreen';
 import MagicAuthScreen from './screens/MagicAuthScreen';
 import WelcomeScreen from './screens/WelcomeScreen';
-import DashboardScreen from './screens/DashboardScreen';
 import CreateProfileScreen from "./screens/profile/CreateProfileScreen";
+import AppTabs from "./components/navigation/AppTabs";
+import EditArtistGenreDescriptionScreen from "./screens/profile/settings/artist/EditArtistGenreDescriptionScreen";
+import EditArtistMusicScreen from "./screens/profile/settings/artist/EditArtistMusicScreen";
+import EditArtistSocialMediaScreen from "./screens/profile/settings/artist/EditArtistSocialMediaScreen";
+import EditArtistGalleryScreen from "./screens/profile/settings/artist/EditArtistGalleryScreen";
 
 const Stack = createNativeStackNavigator();
 
@@ -26,7 +30,7 @@ const linking = {
         screens: {
             WelcomeScreen: "welcome",
             AuthScreen: "auth",
-            DashboardScreen: "dashboard",
+            AppTabs: "dashboard",
             MagicAuthScreen: {
                 path: "auth/magic",
                 parse: {
@@ -71,8 +75,25 @@ export default function App() {
                                         <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} />
                                         <Stack.Screen name="AuthScreen" component={AuthScreen} />
                                         <Stack.Screen name="MagicAuthScreen" component={MagicAuthScreen} />
-                                        <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
+                                        <Stack.Screen name="AppTabs" component={AppTabs} />
                                         <Stack.Screen name="CreateProfile" component={CreateProfileScreen} />
+
+                                        <Stack.Screen
+                                            name="EditArtistGenreDescriptionScreen"
+                                            component={EditArtistGenreDescriptionScreen}
+                                        />
+                                        <Stack.Screen
+                                            name="EditArtistMusicScreen"
+                                            component={EditArtistMusicScreen}
+                                        />
+                                        <Stack.Screen
+                                            name="EditArtistSocialMediaScreen"
+                                            component={EditArtistSocialMediaScreen}
+                                        />
+                                        <Stack.Screen
+                                            name="EditArtistGalleryScreen"
+                                            component={EditArtistGalleryScreen}
+                                        />
                                     </Stack.Navigator>
                                 </NavigationContainer>
                             </ModalProvider>

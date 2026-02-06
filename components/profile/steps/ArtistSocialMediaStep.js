@@ -1,84 +1,14 @@
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useMemo, useState } from "react";
 import { View, Text, ScrollView, Keyboard } from "react-native";
 import { useSafeAreaInsets } from "react-native-safe-area-context";
 import { useTranslation } from "react-i18next";
-import { MaterialCommunityIcons } from "@expo/vector-icons";
 
 import PrimaryButton from "../../buttons/PrimaryButton";
-import PrimaryTextInput from "../../inputs/PrimaryTextInput";
 import { useModal } from "../../../contexts/ModalContext";
 import { MODAL_TYPES } from "../../../constants/ModalTypes";
 import { useAppContext } from "../../../contexts/AppContext";
-import {
-    normalizeSocialInitial,
-    normalizeSocialValues,
-    countFilledSocialLinks,
-    toSocialPayload,
-} from "../../../helpers/socialLinks";
-
-const SOCIAL_TYPES = [
-    { key: "instagram", icon: "instagram", labelKey: "Instagram", placeholder: "instagram.com/yourname" },
-    { key: "tiktok", icon: "music-note-outline", labelKey: "TikTok", placeholder: "tiktok.com/@yourname" },
-    { key: "facebook", icon: "facebook", labelKey: "Facebook", placeholder: "facebook.com/yourpage" },
-    { key: "website", icon: "web", labelKey: "Website", placeholder: "yourdomain.com" },
-];
-
-function LinkRow({ icon, label, placeholder, value, onChangeText, disabled }) {
-    const filled = (value || "").trim().length > 0;
-
-    return (
-        <View className="rounded-2xl border border-white/10 bg-black/20 overflow-hidden mb-4">
-            <View className="absolute -top-10 -right-10 h-28 w-28 rounded-full bg-primary-5/14 blur-2xl" />
-            <View className="absolute -bottom-10 -left-10 h-28 w-28 rounded-full bg-accent-cyan/10 blur-2xl" />
-
-            <View className="flex-row items-center px-4 pt-4">
-                <View className="relative">
-                    <View className="absolute inset-0 rounded-2xl bg-primary-5/45 blur-lg" />
-                    <View
-                        className={`h-11 w-11 rounded-2xl border ${
-                            filled ? "border-primary-5/40 bg-primary-5/10" : "border-white/10 bg-white/5"
-                        } items-center justify-center`}
-                    >
-                        <MaterialCommunityIcons name={icon} size={20} color="white" />
-                    </View>
-                </View>
-
-                <View className="flex-1 pl-3">
-                    <View className="flex-row items-center justify-between">
-                        <Text className="text-text font-extrabold text-sm">
-                            {label}
-                        </Text>
-
-                        {filled && (
-                            <View className="flex-row items-center">
-                                <View className="h-2 w-2 rounded-full bg-success mr-1.5" />
-                                <Text className="text-white/55 text-xs font-semibold">
-                                    Pievienots
-                                </Text>
-                            </View>
-                        )}
-                    </View>
-
-                    <Text className="text-white/55 text-xs mt-0.5">
-                        {placeholder}
-                    </Text>
-                </View>
-            </View>
-
-            <View className="px-4 pb-4 pt-3">
-                <PrimaryTextInput
-                    placeholder={placeholder}
-                    value={value}
-                    onChangeText={onChangeText}
-                    autoCapitalize="none"
-                    autoCorrect={false}
-                    editable={!disabled}
-                    style={{ fontSize: 16, lineHeight: 20, paddingVertical: 6 }}
-                />
-            </View>
-        </View>
-    );
-}
+import { toSocialPayload } from "../../../helpers/socialLinks";
+import ArtistSocialMediaForm from "../forms/ArtistSocialMediaForm";
 
 export default function ArtistSocialMediaStep({ initial, submitLabel, onSubmit, onDone }) {
     const { t } = useTranslation();
@@ -87,56 +17,23 @@ export default function ArtistSocialMediaStep({ initial, submitLabel, onSubmit, 
     const { showToast } = useAppContext();
 
     const [saving, setSaving] = useState(false);
-
-    const normalizedInitial = useMemo(() => {
-        return normalizeSocialInitial(initial);
-    }, [initial]);
-
-    const [values, setValues] = useState(() => {
-        return {
-            instagram: normalizedInitial.instagram,
-            tiktok: normalizedInitial.tiktok,
-            facebook: normalizedInitial.facebook,
-            website: normalizedInitial.website,
-        };
-    });
-
-    useEffect(() => {
-        setValues({
-            instagram: normalizedInitial.instagram,
-            tiktok: normalizedInitial.tiktok,
-            facebook: normalizedInitial.facebook,
-            website: normalizedInitial.website,
-        });
-    }, [normalizedInitial]);
-
-    const normalized = useMemo(() => {
-        return normalizeSocialValues(values);
-    }, [values]);
-
-    const socialFilledCount = useMemo(() => {
-        return countFilledSocialLinks(normalized);
-    }, [normalized]);
+    const [formState, setFormState] = useState(null);
 
     const canContinue = useMemo(() => {
         if (saving) {
             return false;
         }
 
-        if (socialFilledCount < 1) {
+        if (!formState) {
             return false;
         }
 
-        return true;
-    }, [saving, socialFilledCount]);
+        return formState.isValid;
+    }, [saving, formState]);
 
     const onPressSave = async () => {
-        if (saving) {
-            return;
-        }
-
-        if (socialFilledCount < 1) {
-            showToast(t("Lūdzu pievieno vismaz vienu sociālo saiti."), "error");
+        if (!formState?.isValid) {
+            showToast(formState?.errors?.[0] || t("Lūdzu pārbaudi ievadi."), "error");
             return;
         }
 
@@ -145,7 +42,7 @@ export default function ArtistSocialMediaStep({ initial, submitLabel, onSubmit, 
         showModal(MODAL_TYPES.LOADING);
 
         try {
-            const payload = toSocialPayload(values);
+            const payload = toSocialPayload(formState.values);
             const res = await onSubmit(payload);
 
             hideModal();
@@ -205,23 +102,11 @@ export default function ArtistSocialMediaStep({ initial, submitLabel, onSubmit, 
                 </View>
 
                 <View className="mt-8">
-                    {SOCIAL_TYPES.map((row) => {
-                        const key = row.key;
-
-                        return (
-                            <LinkRow
-                                key={key}
-                                icon={row.icon}
-                                label={t(row.labelKey)}
-                                placeholder={row.placeholder}
-                                value={values[key]}
-                                disabled={saving}
-                                onChangeText={(v) => {
-                                    setValues((prev) => ({ ...prev, [key]: v }));
-                                }}
-                            />
-                        );
-                    })}
+                    <ArtistSocialMediaForm
+                        initial={initial}
+                        disabled={saving}
+                        onChange={setFormState}
+                    />
                 </View>
 
                 <View className="mt-10">

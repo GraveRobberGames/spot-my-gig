@@ -174,6 +174,49 @@ export async function saveVenueSocialMedia({ instagram, tiktok, facebook, websit
     return { ok: true, payload: data.payload };
 }
 
+export async function saveProfileGallery({ existing = [], photos = [] }) {
+    const headers = await getAuthHeaders();
+
+    const form = new FormData();
+
+    (Array.isArray(existing) ? existing : []).forEach((p) => {
+        const val = String(p || "").trim();
+        if (val !== "") {
+            form.append("existing[]", val);
+        }
+    });
+
+    (Array.isArray(photos) ? photos : []).forEach((file, idx) => {
+        if (!file) {
+            return;
+        }
+
+        const uri = String(file.uri || file);
+        const name = String(file.fileName || file.name || `photo_${idx}.jpg`);
+        const type = String(file.mimeType || file.type || "image/jpeg");
+
+        form.append("photos[]", { uri, name, type });
+    });
+
+    const res = await fetch(`${API_BASE_URL}/profile/gallery`, {
+        method: "POST",
+        headers: {
+            ...headers,
+            // IMPORTANT: do NOT set Content-Type for FormData in RN
+        },
+        body: form,
+    });
+
+    console.log(res);
+    const data = await safeJson(res);
+
+    if (!res.ok || !data?.success) {
+        return { ok: false, data, status: res.status };
+    }
+
+    return { ok: true, payload: data.payload };
+}
+
 export const PROFILE_STEP_KEYS = {
     CHOOSE_TYPE: "choose_type",
     BASE: "base",

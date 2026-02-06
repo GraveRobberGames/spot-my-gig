@@ -71,7 +71,7 @@ export default function MagicAuthScreen({route, navigation}) {
                 const progress = data.payload.profile_progress;
 
                 if (progress?.is_completed) {
-                    navigation.reset({index: 0, routes: [{name: "DashboardScreen"}]});
+                    navigation.reset({index: 0, routes: [{name: "AppTabs"}]});
                     return;
                 }
 
