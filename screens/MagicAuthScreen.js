@@ -4,11 +4,11 @@ import {useAppContext} from '../contexts/AppContext';
 import {useModal} from '../contexts/ModalContext';
 import {useUserContext} from "../contexts/UserContext";
 import AsyncStorage from "@react-native-async-storage/async-storage";
-import {getProfileStepIndex} from "../helpers/getProfileStepIndex";
 import {MODAL_TYPES} from "../constants/ModalTypes";
 import {registerPushToken} from "../hooks/expoPushToken";
 import {API_BASE_URL} from "../constants/Global";
 import {useTranslation} from "react-i18next";
+import {getProfileStepIndex} from "../components/profile/ProfileFlowConfig";
 
 export default function MagicAuthScreen({route, navigation}) {
     const token = route.params?.token;
@@ -26,7 +26,7 @@ export default function MagicAuthScreen({route, navigation}) {
 
                 navigation.reset({
                     index: 0,
-                    routes: [{name: 'Auth'}],
+                    routes: [{name: 'AuthScreen'}],
                 });
 
                 return;
@@ -45,9 +45,7 @@ export default function MagicAuthScreen({route, navigation}) {
 
                 try {
                     data = await res.json();
-                } catch (e) {
-                    // ignore JSON parse error, we'll fall back to generic message
-                }
+                } catch {}
 
                 if (!res.ok || !data?.success) {
                     const messageFromApi = data?.message || t('Sorry, we couldn’t sign you in. Please try again!');
@@ -57,7 +55,7 @@ export default function MagicAuthScreen({route, navigation}) {
 
                     navigation.reset({
                         index: 0,
-                        routes: [{name: 'Auth'}],
+                        routes: [{name: 'AuthScreen'}],
                     });
 
                     return;
@@ -70,46 +68,37 @@ export default function MagicAuthScreen({route, navigation}) {
                 await AsyncStorage.setItem('api_token', data.token);
                 await registerPushToken(data.payload.id);
 
-                if (data.payload.is_profile_completed) {
-                    navigation.reset({
-                        index: 0,
-                        routes: [{name: 'Dashboard', params: {email}}],
-                    });
-                } else {
-                    const initialStep = getProfileStepIndex(data.payload.profile);
+                const progress = data.payload.profile_progress;
 
-                    navigation.reset({
-                        index: 0,
-                        routes: [{
-                            name: 'CreateProfile',
-                            params: {
-                                initialStep,
-                                profile: data.payload.profile ?? {},
-                            },
-                        }],
-                    });
+                if (progress?.is_completed) {
+                    navigation.reset({index: 0, routes: [{name: "DashboardScreen"}]});
+                    return;
                 }
+
+                const initialStep = getProfileStepIndex(data.payload?.type, progress?.next_step);
+
+                navigation.reset({
+                    index: 0,
+                    routes: [{
+                        name: "CreateProfile",
+                        params: {
+                            initialStep,
+                            stepKey: progress?.next_step,
+                        },
+                    }],
+                });
             } catch (e) {
                 hideModal();
                 showToast(t('Sorry, we couldn’t sign you in. Please try again!'), 'error');
 
                 navigation.reset({
                     index: 0,
-                    routes: [{name: 'Auth'}],
+                    routes: [{name: 'AuthScreen'}],
                 });
             }
         }
 
-        if (token && email) {
-            verifyMagic();
-        } else {
-            showToast(t('Invalid login link. Please request a new one from the app.'), 'error');
-
-            navigation.reset({
-                index: 0,
-                routes: [{name: 'Auth'}],
-            });
-        }
+        verifyMagic();
     }, [token, email]);
 
     return (

@@ -1,42 +1,45 @@
-import "./global.css";
-import * as React from 'react';
+import { NavigationContainer, useNavigationContainerRef } from '@react-navigation/native';
+import { createNativeStackNavigator } from '@react-navigation/native-stack';
 import * as Linking from 'expo-linking';
-import {NavigationContainer, useNavigationContainerRef} from '@react-navigation/native';
-import {createNativeStackNavigator} from '@react-navigation/native-stack';
-import WelcomeScreen from './screens/WelcomeScreen';
+import { I18nextProvider } from 'react-i18next';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
+import GlobalModal from './components/modals/GlobalModal';
+import ToastNotification from './components/notifications/ToastNotification';
+import { AppProvider, useAppContext } from './contexts/AppContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { ModalProvider } from './contexts/ModalContext';
+import { UserProvider } from './contexts/UserContext';
+import "./global.css";
+import i18n from './i18n';
+import AppEntryScreen from './screens/AppEntryScreen';
 import AuthScreen from './screens/AuthScreen';
 import MagicAuthScreen from './screens/MagicAuthScreen';
-import AppEntryScreen from './screens/AppEntryScreen';
-import {AuthProvider} from './contexts/AuthContext';
-import {AppProvider, useAppContext} from './contexts/AppContext';
-import ToastNotification from './components/notifications/ToastNotification';
-import {ModalProvider} from './contexts/ModalContext';
-import GlobalModal from './components/modals/GlobalModal';
-import {UserProvider} from './contexts/UserContext';
-import {SafeAreaProvider} from 'react-native-safe-area-context';
-import {I18nextProvider} from 'react-i18next';
-import i18n from './i18n';
+import WelcomeScreen from './screens/WelcomeScreen';
+import DashboardScreen from './screens/DashboardScreen';
+import CreateProfileScreen from "./screens/profile/CreateProfileScreen";
 
 const Stack = createNativeStackNavigator();
 
 const linking = {
-    prefixes: ['meetmeatbar://', "https://www.meetatbar.com", Linking.createURL('/'), 'exp://'],
+    prefixes: ["spotmygig://", "https://www.spotmygig.com", Linking.createURL("/"), "exp://"],
     config: {
         screens: {
-            Welcome: 'welcome',
-            Auth: 'auth',
-            Dashboard: 'dashboard',
-            MagicAuth: 'auth/magic',
-            CheckInHandler: {
-                path: "checkin",
-                parse: {id: (id) => id},
+            WelcomeScreen: "welcome",
+            AuthScreen: "auth",
+            DashboardScreen: "dashboard",
+            MagicAuthScreen: {
+                path: "auth/magic",
+                parse: {
+                    token: (token) => token,
+                    email: (email) => email,
+                },
             },
         },
     },
 };
 
 function ToastNotificationHooked() {
-    const {toast, hideToast} = useAppContext();
+    const { toast, hideToast } = useAppContext();
 
     return (
         <ToastNotification
@@ -58,16 +61,18 @@ export default function App() {
                     <AppProvider>
                         <AuthProvider>
                             <ModalProvider>
-                                <ToastNotificationHooked/>
+                                <ToastNotificationHooked />
 
                                 <NavigationContainer linking={linking} ref={navigationRef}>
-                                    <GlobalModal/>
+                                    <GlobalModal />
 
-                                    <Stack.Navigator screenOptions={{headerShown: false}}>
-                                        <Stack.Screen name="AppEntryScreen" component={AppEntryScreen}/>
-                                        <Stack.Screen name="WelcomeScreen" component={WelcomeScreen}/>
-                                        <Stack.Screen name="AuthScreen" component={AuthScreen}/>
-                                        <Stack.Screen name="MagicAuthScreen" component={MagicAuthScreen}/>
+                                    <Stack.Navigator screenOptions={{ headerShown: false }}>
+                                        <Stack.Screen name="AppEntryScreen" component={AppEntryScreen} />
+                                        <Stack.Screen name="WelcomeScreen" component={WelcomeScreen} />
+                                        <Stack.Screen name="AuthScreen" component={AuthScreen} />
+                                        <Stack.Screen name="MagicAuthScreen" component={MagicAuthScreen} />
+                                        <Stack.Screen name="DashboardScreen" component={DashboardScreen} />
+                                        <Stack.Screen name="CreateProfile" component={CreateProfileScreen} />
                                     </Stack.Navigator>
                                 </NavigationContainer>
                             </ModalProvider>

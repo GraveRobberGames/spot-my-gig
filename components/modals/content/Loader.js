@@ -18,10 +18,10 @@ export default function Loader() {
     return (
         <View style={{alignItems: "center", justifyContent: "center"}}>
             <Animated.Image
-                source={require("../../../assets/icons/cocktail.png")}
+                source={require("../../../assets/images/logo.png")}
                 style={{
-                    width: 100,
-                    height: 100,
+                    width: 280,
+                    height: 280,
                     transform: [{scale}],
                 }}
                 resizeMode="contain"

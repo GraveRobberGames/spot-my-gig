@@ -1,21 +1,32 @@
-import React from "react";
-import {View, Text, Pressable} from "react-native";
+import React, {useMemo} from "react";
+import {View, Text, Pressable, Linking} from "react-native";
 import PrimaryButton from "../../buttons/PrimaryButton";
 import SecondaryButton from "../../buttons/SecondaryButton";
 import {Path, Svg} from "react-native-svg";
 import {openEmailApp} from "../../../helpers/openEmailApp";
 import {useTranslation} from "react-i18next";
+import {useNavigation} from "@react-navigation/native";
 
-export default function EmailConfirmation({
-                                              email,
-                                              onClose,
-                                          }) {
+export default function EmailConfirmation({email, token, onClose}) {
     const {t} = useTranslation();
+    const navigation = useNavigation();
+
+    const canDevLogin = useMemo(() => {
+        if (!__DEV__) {
+            return false;
+        }
+
+        if (!email || !token) {
+            return false;
+        }
+
+        return true;
+    }, [email, token]);
 
     return (
-        <View className="bg-gray-24 rounded-xl p-6 items-center shadow-lg pt-14">
+        <View className="rounded-2xl border border-card/40 bg-bg p-6 items-center shadow-lg pt-14">
             <View className="absolute top-1 -right-2">
-                <Pressable className="absolute right-2" onPress={onClose}>
+                <Pressable className="absolute right-7 top-4" onPress={onClose}>
                     <Svg width={24} height={24} viewBox="0 0 24 24" fill="none">
                         <Path
                             fillRule="evenodd"
@@ -27,15 +38,31 @@ export default function EmailConfirmation({
                 </Pressable>
             </View>
 
-            <Text className="text-white text-xl font-semibold mb-4 text-center">
-                {t("Gandrīz gatavs!")}
+            <Text className="text-white text-2xl font-semibold mb-4 text-center">
+                {t("Gandrīz gatavs!")} 🤘
             </Text>
+
             <Text className="text-[#ABAFC4] text-base mb-8 text-center">
-                {t("Mēs nosūtījām konta apstiprināšanas saiti uz {email}! Ja to neatrodi, pārbaudi arī savu mēstuļu mapi.", { email })}
+                {t(
+                    "Mēs nosūtījām konta apstiprināšanas saiti uz {email}! Ja to neatrodi, pārbaudi arī savu mēstuļu mapi.",
+                    {email}
+                )}
             </Text>
+
             <View className="gap-y-2 flex flex-col w-full">
-                <PrimaryButton title={t('Atvērt e-pasta aplikāciju')} onPress={openEmailApp}/>
-                <SecondaryButton title={t('Es neko neesmu saņēmis')} onPress={onClose}/>
+                <PrimaryButton title={t("Atvērt e-pasta aplikāciju")} onPress={openEmailApp} />
+                <SecondaryButton title={t("Es neko neesmu saņēmis")} onPress={onClose} />
+
+                {__DEV__ && !!token && !!email && (
+                    <SecondaryButton
+                        className="bg-card"
+                        title={t("DEV: Atvērt magic link")}
+                        onPress={() => {
+                            const url = `spotmygig://auth/magic?token=${token}&email=${encodeURIComponent(email)}`;
+                            Linking.openURL(url);
+                        }}
+                    />
+                )}
             </View>
         </View>
     );

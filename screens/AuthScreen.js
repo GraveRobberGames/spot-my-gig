@@ -1,4 +1,4 @@
-import React, {useState} from "react";
+import React, {useMemo, useState} from "react";
 import {View, Text, ScrollView, Keyboard} from "react-native";
 import {useTranslation} from "react-i18next";
 import AsyncStorage from "@react-native-async-storage/async-storage";
@@ -9,7 +9,7 @@ import {useAppContext} from "../contexts/AppContext";
 import {useUserContext} from "../contexts/UserContext";
 import {useModal} from "../contexts/ModalContext";
 import {MODAL_TYPES} from "../constants/ModalTypes";
-import {API_BASE_URL, APPLE_TESTING_EMAIL, APPLE_TESTING_TOKEN} from "../constants/Global";
+import {API_BASE_URL} from "../constants/Global";
 import {LOCALES} from "../constants/Locales";
 import {SafeAreaView} from "react-native-safe-area-context";
 
@@ -19,13 +19,31 @@ export default function AuthScreen({navigation, route}) {
     const [email, setEmail] = useState(route?.params?.email || "");
     const [buttonDisabled, setButtonDisabled] = useState(false);
     const [cooldown, setCooldown] = useState(0);
+    const [emailTouched, setEmailTouched] = useState(false);
 
     const {showToast} = useAppContext();
     const {showModal, hideModal} = useModal();
     const {setUser} = useUserContext();
     const {t} = useTranslation();
 
-    const isValidEmail = EMAIL_REGEX.test(email);
+    const emailTrimmed = useMemo(() => (email || "").trim(), [email]);
+    const isValidEmail = useMemo(() => EMAIL_REGEX.test(emailTrimmed), [emailTrimmed]);
+
+    const emailError = useMemo(() => {
+        if (!emailTouched) {
+            return "";
+        }
+
+        if (!emailTrimmed) {
+            return "";
+        }
+
+        if (!isValidEmail) {
+            return t("Lūdzu ievadi pareizu e-pasta adresi");
+        }
+
+        return "";
+    }, [emailTouched, emailTrimmed, isValidEmail, t]);
 
     const handleClose = () => {
         if (navigation.canGoBack()) {
@@ -37,6 +55,7 @@ export default function AuthScreen({navigation, route}) {
 
     const getCurrentLocale = async () => {
         const saved = await AsyncStorage.getItem("language");
+
         if (saved && [LOCALES.EN, LOCALES.LV].includes(saved)) {
             return saved;
         }
@@ -45,21 +64,6 @@ export default function AuthScreen({navigation, route}) {
 
     const requestMagicLink = async () => {
         const locale = await getCurrentLocale();
-
-        if (email === APPLE_TESTING_EMAIL) {
-            setUser({
-                token: APPLE_TESTING_TOKEN,
-                email: APPLE_TESTING_EMAIL,
-                locale,
-            });
-
-            navigation.reset({
-                index: 0,
-                routes: [{name: "MagicAuthScreen", params: {email: APPLE_TESTING_EMAIL, token: APPLE_TESTING_TOKEN}}],
-            });
-            return;
-        }
-
         setButtonDisabled(true);
         showModal(MODAL_TYPES.LOADING);
 
@@ -67,9 +71,9 @@ export default function AuthScreen({navigation, route}) {
             const res = await fetch(`${API_BASE_URL}/user/confirm-email`, {
                 method: "POST",
                 headers: {"Content-Type": "application/json"},
-                body: JSON.stringify({email, locale}),
+                body: JSON.stringify({email: emailTrimmed, locale}),
             });
-
+            console.log(res);
             setButtonDisabled(false);
 
             if (!res.ok) {
@@ -93,7 +97,10 @@ export default function AuthScreen({navigation, route}) {
                     });
                 }, 1000);
 
-                showModal(MODAL_TYPES.EMAIL_CONFIRMATION, {email});
+                showModal(MODAL_TYPES.EMAIL_CONFIRMATION, {
+                    email: emailTrimmed,
+                    token: data.token,
+                });
 
                 setUser({
                     token: data.token,
@@ -124,7 +131,7 @@ export default function AuthScreen({navigation, route}) {
                 contentContainerStyle={{flexGrow: 1}}
                 keyboardShouldPersistTaps="handled"
             >
-                <View className="pt-7">
+                <View className="absolute top-1 right-4 z-[999]">
                     <CloseButton onClose={handleClose} width={25} height={25}/>
                 </View>
 
@@ -153,18 +160,38 @@ export default function AuthScreen({navigation, route}) {
                             <PrimaryTextInput
                                 style={{lineHeight: 15, paddingVertical: 5}}
                                 placeholder={t("hello@gmail.com")}
-                                value={email}
-                                onChangeText={setEmail}
+                                value="normunds.petrovs23@gmail.com"
+                                onChangeText={(v) => {
+                                    setEmail(v);
+                                    if (!emailTouched) {
+                                        setEmailTouched(true);
+                                    }
+                                }}
+                                onBlur={() => {
+                                    if (!emailTouched) {
+                                        setEmailTouched(true);
+                                    }
+                                }}
                                 keyboardType="email-address"
                                 autoCapitalize="none"
                                 autoCorrect={false}
                                 returnKeyType="done"
                                 onSubmitEditing={() => {
-                                    if (!isValidEmail || buttonDisabled || cooldown > 0) return;
+                                    if (!isValidEmail || buttonDisabled || cooldown > 0) {
+                                        setEmailTouched(true);
+                                        return;
+                                    }
+
                                     Keyboard.dismiss();
                                     requestMagicLink();
                                 }}
                             />
+
+                            {!!emailError && (
+                                <Text className="text-red-400 text-sm mt-2">
+                                    {emailError}
+                                </Text>
+                            )}
                         </View>
 
                         <View className="mt-3">
@@ -178,6 +205,10 @@ export default function AuthScreen({navigation, route}) {
                                     title={t("Turpināt")}
                                     disabled={!isValidEmail || buttonDisabled}
                                     onPress={() => {
+                                        if (!isValidEmail) {
+                                            setEmailTouched(true);
+                                            return;
+                                        }
                                         Keyboard.dismiss();
                                         requestMagicLink();
                                     }}

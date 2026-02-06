@@ -1,14 +1,14 @@
-import React, {useEffect, useRef} from "react";
-import {Animated, Text, PanResponder} from "react-native";
-import {useSafeAreaInsets} from "react-native-safe-area-context";
+import { useEffect, useRef } from "react";
+import { Animated, PanResponder, Text } from "react-native";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
 
 export default function ToastNotification({
-                                              visible,
-                                              message,
-                                              type = "success",
-                                              duration = 2500,
-                                              onHide
-                                          }) {
+    visible,
+    message,
+    type = "success",
+    duration = 2500,
+    onHide
+}) {
     const translateY = useRef(new Animated.Value(-80)).current;
     const insets = useSafeAreaInsets();
     const dismissedRef = useRef(false);
@@ -82,7 +82,7 @@ export default function ToastNotification({
                 shadowOpacity: 0.08,
                 shadowRadius: 8,
                 elevation: 2,
-                transform: [{translateY}],
+                transform: [{ translateY }],
                 opacity: visible ? 1 : 0,
             }}
         >

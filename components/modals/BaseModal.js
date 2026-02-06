@@ -18,10 +18,10 @@ export default function BaseModal({
             {...props}
         >
             <View className="flex-1">
-                <Pressable onPress={onClose} className="absolute inset-0 bg-black/85" />
+                <Pressable onPress={onClose} className="absolute inset-0 bg-black/95" />
 
                 <View className="flex-1 justify-center px-4">
-                    <View className="rounded-2xl border border-white/10 bg-bg p-5">
+                    <View className="p-5">
                         {children}
                     </View>
                 </View>

@@ -41,7 +41,7 @@ export default function AppEntryScreen({navigation}) {
                 await AsyncStorage.setItem('user', JSON.stringify(freshUser.payload));
 
                 if (freshUser.payload.is_profile_completed) {
-                    navigation.reset({index: 0, routes: [{name: "Dashboard"}]});
+                    navigation.reset({index: 0, routes: [{name: "DashboardScreen"}]});
                 } else {
                     const initialStep = getProfileStepIndex(freshUser.payload.profile);
 

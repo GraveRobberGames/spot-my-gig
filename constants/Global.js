@@ -1,6 +1,6 @@
 const ENV = "development";
 
-export const BASE_URL = "https://www.meetatbar.com/";
+export const BASE_URL = "https://superoptimal-moises-nonoptimistic.ngrok-free.dev/";
 
 const API_BASE_URLS = {
     development: BASE_URL + "api",
@@ -8,7 +8,3 @@ const API_BASE_URLS = {
 };
 
 export const API_BASE_URL = API_BASE_URLS[ENV];
-
-// Apple testing
-export const APPLE_TESTING_EMAIL = 'apple@example.com';
-export const APPLE_TESTING_TOKEN = 'f2b7bdfdb0a220d1cd3f3208e160f0abb1233bfab91ad939c963bb883dd5dab5';
